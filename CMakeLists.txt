@@ -43,7 +43,7 @@ SET(LIB_TYPE STATIC)
 
 if(CUDA_FOUND)
 
-SET(CUDA_NVCC_FLAGS "-arch=compute_30" CACHE STRING "nvcc flags" FORCE)
+SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_20,code=sm_20 -gencode=arch=compute_30,code=sm_30"   CACHE STRING "nvcc flags" FORCE)
 
 endif()
 
