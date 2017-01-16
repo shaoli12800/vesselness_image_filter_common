@@ -93,7 +93,7 @@ void  VesselnessNodeBase::imgTopicCallback(const sensor_msgs::ImageConstPtr& msg
     cv_bridge::CvImagePtr cv_ptrIn;
     cv_bridge::CvImage   cv_Out;
 
-    ROS_INFO("Got new image");
+    
     //Attempt to pull the image into an opencv form.
     try
     {
@@ -110,7 +110,7 @@ void  VesselnessNodeBase::imgTopicCallback(const sensor_msgs::ImageConstPtr& msg
     
 	if (cv_ptrIn->image.size().height != imgAllocSize.height || cv_ptrIn->image.size().width != imgAllocSize.width )
 	{
-	    ROS_INFO("Resizing the allocated matrices");
+	    
 		imgAllocSize = Size(this->allocateMem(cv_ptrIn->image.size()));
 	}
 	//Actual process segmentation code:
@@ -141,7 +141,7 @@ void  VesselnessNodeBase::imgTopicCallback(const sensor_msgs::ImageConstPtr& msg
 
     //publish the outputdata now.
     if(publish) image_pub_.publish(cv_Out.toImageMsg());
-    ROS_INFO("published new image");
+   
     /*Mat outputImageDisp,preOutputImageDisp; */
 
 }

@@ -114,7 +114,7 @@ void  VesselnessNodeCPU::segmentImage(const Mat& src,Mat& dst) {
     filter2D(greyFloat,greyImage_xy,-1,gaussKernel_XY);
     filter2D(greyFloat,greyImage_yy,-1,gaussKernel_YY);
 
-    std::cout << "Blurred images" << std::endl;
+
 
     //Compute the number of total pixels
     int pixCount = greyImage_xx.rows*greyImage_xx.cols;
@@ -139,7 +139,7 @@ void  VesselnessNodeCPU::segmentImage(const Mat& src,Mat& dst) {
     int inputMaskStep1 =  imageMask.step[1];
 
 
-    std::cout << "at while loop" << std::endl;
+    
 
     //From Frangi et al.
     //for each image, evaluate its eigen vectors, then look at the cost
@@ -246,7 +246,7 @@ void  VesselnessNodeCPU::segmentImage(const Mat& src,Mat& dst) {
     }
     //Once all is said and done, blur the final image using a gaussian.
 
-    std::cout << "One more Blur" << std::endl;
+
 
     angleMagBlur(preOutput,dst,this->filterParameters.postProcess);
 

@@ -54,7 +54,7 @@ class ImageConverter
   
 public:
   ImageConverter()
-    : it_(nh_)
+    : it_(nh_), dirStatus(true)
   {
     // Subscrive to input video feed and publish output video feed
     image_sub_ = it_.subscribe("image_thin", 1, 
@@ -85,18 +85,50 @@ public:
 
     if (msg->encoding.compare(std::string("32FC2")) == 0)
     {
-        ROS_INFO("Converting two channel image");
         Mat outputImage;
         convertSegmentImageCPU(cv_ptr->image,outputImage);
+
+        if (dirStatus)
+        {
+          // create a rectangle ROI.
+          //5 pix by 5 pix.
+          const int s1(11);
+          const int s2(5);
+          Rect imageR(0,0, outputImage.cols, outputImage.rows);
+          for (int ix(0); ix < (outputImage.cols-s1); ix += s1)
+          {
+            for (int iy(0); iy < (outputImage.rows-s1); iy += s1)
+            {
+              Rect tempImg(ix,iy,s1,s1);
+              cv::Point2d ptInfo(angleMagMean(cv_ptr->image, tempImg));
+
+              if(norm(ptInfo) > 0.001)
+              {
+                ptInfo *= (1/norm(ptInfo));
+
+
+                cv::Point pt(ix+s2+ptInfo.x*s2,iy+s2+ptInfo.y*s2);
+                line(outputImage, Point(ix+s2,iy+s2), pt, Scalar(0,255,0));
+              }
+              
+            }
+          }
+
+        }
 
         ROS_INFO("Showing Image");
         // Update GUI Window
         cv::imshow(OPENCV_WINDOW, outputImage);
-        cv::waitKey(3);
+        char key = cv::waitKey(3);
+        if (key == 'd')
+        {
+          dirStatus != dirStatus;
+          ROS_INFO("updated dirStatus");
+        }
+
     }
     else if (msg->encoding.compare(std::string("32FC1")) == 0)
     {
-        ROS_INFO("Converting single channel image");
         Mat outputImage;
         
         convertSegmentImageCPUBW(cv_ptr->image,outputImage);
@@ -105,9 +137,12 @@ public:
         cv::waitKey(3);
     }
     else ROS_INFO("Invalid Image");
-
-
     }
+
+
+private:
+  bool dirStatus;
+
 };
 
 int main(int argc, char** argv)

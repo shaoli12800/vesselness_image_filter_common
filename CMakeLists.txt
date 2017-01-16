@@ -101,7 +101,7 @@ ADD_EXECUTABLE(vesselness_image_filter_cpu_node src/cpu/vesselness_image_filter_
 
 ADD_EXECUTABLE(vesselness_image_filter_cpu_bw_node src/cpu/vesselness_image_filter_cpu_bw_node.cpp)
 
-ADD_EXECUTABLE(vesselness_image_filter_cpu_viewer_node src/cpu/vesselness_image_viewer_node.cpp)
+ADD_EXECUTABLE(vesselness_image_cpu_viewer_node src/cpu/vesselness_image_viewer_node.cpp)
 
 
 if(CUDA_FOUND)
@@ -159,7 +159,7 @@ target_link_libraries(vesselness_lib
    ${catkin_LIBRARIES}
  )
 
-target_link_libraries(vesselness_image_filter_cpu_viewer_node
+target_link_libraries(vesselness_image_cpu_viewer_node
    vesselness_lib
    ${OpenCV_LIBRARIES}
    ${catkin_LIBRARIES}
