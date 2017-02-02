@@ -35,95 +35,127 @@
  *
  */
 
-#ifndef IMAGESEGMENTCPUH
-#define IMAGESEGMENTCPUH
-
+#ifndef VESSELNESS_IMAGE_FILTER_NODE_CPU_BW_H
+#define VESSELNESS_IMAGE_FILTER_NODE_CPU_BW_H
 
 #include <vesselness_image_filter_common/vesselness_image_filter_common.h>
 
-//Converts a single image into a displayable RGB format.
-void convertSegmentImageCPUBW(const cv::Mat&,cv::Mat&);
 
-//This class extends the basic VesselnessNode based on using a CPU to complete the actual processing.
-class VesselnessNodeCPUBW: public VesselnessNodeBase {
+/**
+ * @brief convert a bw segmented vesselness image to a displayable format.
+ *
+ * @param the input image
+ * @param the output image
+ */
+void convertSegmentImageCPUBW(const cv::Mat&, cv::Mat&);
 
-private:
+/**
+ * @brief The BW vesselness node class which extends the vesselness base class.
+ */
+class VesselnessNodeCPUBW: public VesselnessNodeBase
+{
+private:  
+  /**
+   * @brief the grey input image.
+   */
+  cv::Mat greyImage;
 
-    //Input and output information
-    cv::Mat input;
-    cv::Mat output;
+  /**
+   * @brief the grey floating point input image.
+   */
+  cv::Mat greyFloat;
 
-    //Intermediates:
-    cv::Mat cXX;
-    cv::Mat cXY;
-    cv::Mat cYY;
+  /**
+   * @brief the XX grey image.
+   */
+  cv::Mat greyImage_xx;
 
-    cv::Mat greyImage_xx;
-    cv::Mat greyImage_xy;
-    cv::Mat greyImage_yy;
+  /**
+   * @brief the XY grey image.
+   */
+  cv::Mat greyImage_xy;
 
-    cv::Mat inputGreyG;
-    cv::Mat inputFloat255G;
-    cv::Mat ones;
-    cv::Mat inputFloat1G;
+  /**
+   * @brief the YY grey image.
+   */
+  cv::Mat greyImage_yy;
 
-    cv::Mat preOutput;
+  /**
+   * @brief the preoutput image.
+   */
+  cv::Mat preOutput;
 
-    cv::Mat scaled;
-    cv::Mat scaledU8;
-    cv::Mat dispOut;
+  /**
+   * @brief the XX gaussian kernel.
+   */
+  cv::Mat gaussKernel_XX;
 
-    //Gauss kernels
-    cv::Mat gaussKernel_XX;
-    cv::Mat gaussKernel_XY;
-    cv::Mat gaussKernel_YY;
-    cv::Mat imageMask;
+  /**
+   * @brief the XY gaussian kernel.
+   */
+  cv::Mat gaussKernel_XY;
 
-    cv::Mat greyFloat;
-    cv::Mat greyImage;
+  /**
+   * @brief the YY gaussian kernel.
+   */
+  cv::Mat gaussKernel_YY;
 
+  /**
+   * @brief the image filtering mask.
+   */
+  cv::Mat imageMask;
 
-    cv::Mat srcMats;
-    cv::Mat dstMats;
+  /**
+   * @brief initialize the required gaussian kernels.
+   */
+  void  initKernels() override;
 
+  /**
+   * @brief The allocate memory function. 
+   *
+   * required for class instantiation.
+   *
+   * @param size of matrices to allocate.
+   */
+  cv::Size allocateMem(const cv::Size &);
 
-    //status booleans
-    bool kernelReady;
-    bool allocatedKernels;
+  /**
+   * @brief deallocates the class memory
+   *
+   * required for class instatiation.
+   */
+  void deallocateMem();
 
+  /**
+   * @brief segments the image using a BW output.
+   *
+   * @param input image
+   * @param output image
+   */
+  void segmentImage(const cv::Mat &, cv::Mat &);
 
-    void  setKernels();
-    void  initKernels() override;
-    void  updateKernels();
-
-
-
-    //declare the memory management functions
-    //void allocateMem(Size); (declared in the abstract base class)
-    cv::Size allocateMem(const cv::Size &);
-    void deallocateMem();
-
-    /*TODO void VesselnessNodeGPU::findOutputCutoffs(float*,int = 10); */
-
-    //blocking image segmentation
-    void segmentImage(const cv::Mat &, cv::Mat &);
-
-    
-    //Update object parameters.
-    void updateKernels(const segmentThinParam &);
-	
+  /**
+   * @brief updates the image processing kernels.
+   *
+   * Not yet implemented
+   *
+   * @param the new kernel parameters.
+   */
+  void updateKernels(const segmentThinParam &);
 
 public:
-   
-    //This function needs to operate at peak speed:
-    VesselnessNodeCPUBW(const char*,const char *); //constructor
-    VesselnessNodeCPUBW();    //default constructor
-    ~VesselnessNodeCPUBW();   //deconstructor
+  /**
+   * @brief The explicit constructor
+   *
+   * @param the subscribed image topic.
+   * @param the published image topic.
+   */
+  explicit VesselnessNodeCPUBW(const char*, const char *);
 
+  /**
+   * @brief the deconstructor.
+   */
+  ~VesselnessNodeCPUBW();
 };
 
-
-
-
-
-#endif
+#endif  // VESSELNESS_IMAGE_FILTER_NODE_CPU_BW_H

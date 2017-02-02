@@ -43,112 +43,110 @@
 #include "vesselness_image_filter_common/vesselness_image_filter_common.h"
 
 
-using namespace cv;
-
-
-void VesselnessNodeBase::paramCallback(vesselness_image_filter_common::vesselness_params_Config &config, uint32_t level)
+void VesselnessNodeBase::paramCallback(vesselness_image_filter::vesselness_params_Config &config, uint32_t level)
 {
   ROS_INFO("Reconfigure request : %d %f %f %f %d %f",
-           config.side_h,
-           config.variance_h,
-           config.beta,
-           config.c,
-           config.side_p,
-           config.variance_p);
-	
-	
-	gaussParam hessParam_(config.variance_h,config.side_h);
-    gaussParam postProcess_(config.variance_p,config.side_p);
+    config.side_h,
+    config.variance_h,
+    config.beta,
+    config.c,
+    config.side_p,
+    config.variance_p);
 
-    float betaParam_ = config.beta*config.beta;    //  betaParamIn;
-    float cParam_    = config.c*config.c;     //  cParamIn;
+  // prepare the setting structures for use in the filter
+  gaussParam hessParam_(config.variance_h, config.side_h);
+  gaussParam postProcess_(config.variance_p, config.side_p);
 
-	filterParameters =  segmentThinParam(hessParam_,postProcess_,betaParam_,cParam_);
-	kernelReady = false;
-    ROS_INFO("Reinitializing the kernels");
-    this->initKernels();
-    ROS_INFO("Updated and reinitialized the kernels");
+  float betaParam_ = config.beta*config.beta;
+  float cParam_    = config.c*config.c;
+
+  // assign the new paramters and reinitializing the kernels.
+  filterParameters =  segmentThinParam(hessParam_, postProcess_, betaParam_, cParam_);
+  kernelReady = false;
+  ROS_INFO("Reinitializing the kernels");
+  this->initKernels();
+  ROS_INFO("Updated and reinitialized the kernels");
 }
 
 
 
-//TODO brief introductory comments...
-VesselnessNodeBase::VesselnessNodeBase(const char* subscriptionChar,const char* publicationChar):
-    it_(nh_),
-	filterParameters(gaussParam(1.5,5),gaussParam(2.0,7),0.1,0.005),
-	imgAllocSize(-1,-1),
-	kernelReady(false),
-    outputChannels(-1)
+
+VesselnessNodeBase::VesselnessNodeBase(const char* subscriptionChar, const char* publicationChar):
+  it_(nh_),
+  filterParameters(gaussParam(1.5, 5), gaussParam(2.0, 7), 0.1, 0.005),
+  imgAllocSize(-1, -1),
+  kernelReady(false),
+  outputChannels(-1)
 {
-    // Subscribe to input video feed and publish output video feed
-    image_sub_ = it_.subscribe(subscriptionChar, 1,
-        &VesselnessNodeBase::imgTopicCallback, this);
+  // Subscribe to the input video feed.
+  image_sub_ = it_.subscribe(subscriptionChar, 1,
+      &VesselnessNodeBase::imgTopicCallback, this);
 
-    //data output.
-    image_pub_ = it_.advertise(publicationChar, 1);
+  // Publish to the output video feed.
+  image_pub_ = it_.advertise(publicationChar, 1);
 }
 
-//image topic callback hook
-void  VesselnessNodeBase::imgTopicCallback(const sensor_msgs::ImageConstPtr& msg) {
-    cv_bridge::CvImagePtr cv_ptrIn;
-    cv_bridge::CvImage   cv_Out;
 
-    ROS_INFO("Got new image");
-    //Attempt to pull the image into an opencv form.
-    try
-    {
-        cv_ptrIn = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-    }
+void  VesselnessNodeBase::imgTopicCallback(const sensor_msgs::ImageConstPtr& msg)
+{
+  cv_bridge::CvImagePtr cv_ptrIn;
+  cv_bridge::CvImage   cv_Out;
 
-    catch (cv_bridge::Exception& e)
-    {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
-    }
+  // Attempt to convert the image into an opencv form.
+  // The image is assumed to be an 3-channel 24 bit pixel depth
+  try
+  {
+      cv_ptrIn = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+  }
+  catch (cv_bridge::Exception& e)
+  {
+      ROS_ERROR("cv_bridge exception: %s", e.what());
+      return;
+  }
 
-    // ROS_INFO("Converted image to opencv");
-    
-	if (cv_ptrIn->image.size().height != imgAllocSize.height || cv_ptrIn->image.size().width != imgAllocSize.width )
-	{
-	    ROS_INFO("Resizing the allocated matrices");
-		imgAllocSize = Size(this->allocateMem(cv_ptrIn->image.size()));
-	}
-	//Actual process segmentation code:
+  // resize the images if necessary.
+  if (cv_ptrIn->image.size().height != imgAllocSize.height || cv_ptrIn->image.size().width != imgAllocSize.width )
+  {
+    ROS_INFO("Resizing the allocated matrices");
+    imgAllocSize = cv::Size(this->allocateMem(cv_ptrIn->image.size()));
+  }
 
-    segmentImage(cv_ptrIn->image,outputImage);
+  // Actually segment the image.
+  segmentImage(cv_ptrIn->image, outputImage);
 
-    //The result is outputImage.
-    //Publish this output
-    //Fill in the headers and encoding type
-    cv_Out.image = outputImage;
-    //cv_Out.header =  cv_ptrIn->header;
+  // The result is outputImage.
+  // Publish this output
+  // Fill in the headers and encoding type
+  cv_Out.image = outputImage;
+  // cv_Out.header =  cv_ptrIn->header;
 
-    bool publish(false);
-    if(outputChannels == 1)
-    {
-        cv_Out.encoding = std::string("32FC1");
-        publish=true;
-    }
-    else if(outputChannels == 2)
-    {
-        cv_Out.encoding = std::string("32FC2");
-        publish = true;
-    }
-    else
-    {
-        ROS_INFO("The output is not properly set up");
-    }
+  // only publish if the image type is reconized.
+  bool publish(false);
+  if (outputChannels == 1)
+  {
+    cv_Out.encoding = std::string("32FC1");
+    publish = true;
+  }
+  else if (outputChannels == 2)
+  {
+    cv_Out.encoding = std::string("32FC2");
+    publish = true;
+  }
+  else
+  {
+    ROS_INFO("The output is not properly set up");
+  }
 
-    //publish the outputdata now.
-    if(publish) image_pub_.publish(cv_Out.toImageMsg());
+  // publish the outputdata now.
+  if (publish)
+  {
+    image_pub_.publish(cv_Out.toImageMsg());
     ROS_INFO("published new image");
-    /*Mat outputImageDisp,preOutputImageDisp; */
-
+  }
 }
 
 
-
-
+// This is the blank destructor.
 VesselnessNodeBase::~VesselnessNodeBase()
 {
 }
@@ -156,7 +154,7 @@ VesselnessNodeBase::~VesselnessNodeBase()
 
 void VesselnessNodeBase::setParamServer()
 {
-    //initialize the parameter server.
+    // initialize and connect to the parameter server.
     f = boost::bind(&VesselnessNodeBase::paramCallback, this, _1, _2);
     srv.setCallback(f);
 }
